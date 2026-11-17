@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.DS_Store
+.env
+.ipynb_checkpoints/
+.cache/
+data/raw/*
+!data/raw/.gitkeep
+data/clean/*.duckdb*
+data/clean/*.sqlite*
+data/clean/*.csv
+*.part
