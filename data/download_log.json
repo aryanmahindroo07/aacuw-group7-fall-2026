@@ -1,0 +1,117 @@
+[
+  {
+    "file": "usaleep_wa.csv",
+    "url": "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NVSS/USALEEP/CSV/WA_A.CSV",
+    "timestamp_utc": "2026-11-17T07:45:19.272047+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 55819,
+    "sha256": "f1a9f2c116f4a3c92ef8d968fbd35d2b0a6cc501e83f8b61840cbbf14a04ade8"
+  },
+  {
+    "file": "tract_relationship_wa.txt",
+    "url": "https://www2.census.gov/geo/docs/maps-data/data/rel2020/tract/tab20_tract20_tract10_st53.txt",
+    "timestamp_utc": "2026-11-17T07:45:19.694719+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 455258,
+    "sha256": "87f7bd8e49c2e602fd0e8620e6ea0b4342631bce14da222d2e8d7da5cbd684fd"
+  },
+  {
+    "file": "nri_item.json",
+    "url": "https://www.arcgis.com/sharing/rest/content/items/9da4eeb936544335a6db0cd7a8448a51?f=json",
+    "timestamp_utc": "2026-11-17T07:45:19.801243+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 38347,
+    "sha256": "26d7411f35395ad1aa1ef344cf66e5fa4c6c04bb739f29b0cda1416cf9143c3d"
+  },
+  {
+    "file": "nri_dictionary.csv",
+    "url": "https://fema.maps.arcgis.com/sharing/rest/content/items/4b9db412e99542029b3c37c37ad714bb/data",
+    "timestamp_utc": "2026-11-17T07:45:19.921082+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 61179,
+    "sha256": "fd613c89e547b852666ab8fe5c64fc7980c5da7654a90a305f6f40af31236311"
+  },
+  {
+    "file": "nri_layer.json",
+    "url": "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0?f=json",
+    "timestamp_utc": "2026-11-17T07:45:20.316515+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 150078,
+    "sha256": "2a116644784a55fc98e3881ecbb0dacaf1b8b53da31fe2d34aebf31bfe809882"
+  },
+  {
+    "file": "nri_wa_count.json",
+    "url": "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0/query?where=STATEFIPS+%3D+%2753%27&returnCountOnly=true&f=json",
+    "timestamp_utc": "2026-11-17T07:45:20.578364+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 76,
+    "sha256": "6eb9db6150d668a2502d6b01730c63b8a869e34c1bd5645f920db505671264a1"
+  },
+  {
+    "file": "nri_wa.json",
+    "url": "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0/query?where=STATEFIPS+%3D+%2753%27&outFields=%2A&returnGeometry=false&orderByFields=TRACTFIPS&resultRecordCount=2000&f=json",
+    "timestamp_utc": "2026-11-17T07:45:20.936775+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "failed",
+    "error": "Unexpected NRI row version"
+  },
+  {
+    "file": "acs_B19013_metadata.json",
+    "url": "https://api.census.gov/data/2015/acs/acs5/groups/B19013.json",
+    "timestamp_utc": "2026-11-17T07:45:23.888447+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 178516,
+    "sha256": "86de0e76f92f6122c205dff8c86d5e07683d5c8044993a29bcc60f65d54ad4c7"
+  },
+  {
+    "file": "acs_B17001_metadata.json",
+    "url": "https://api.census.gov/data/2015/acs/acs5/groups/B17001.json",
+    "timestamp_utc": "2026-11-17T07:45:23.993177+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "ok",
+    "bytes": 252284,
+    "sha256": "2ee22a6115d9f22f16a0442d77e6b894a60fea5346e011dcbe81be0d870d7513"
+  },
+  {
+    "file": "acs_2015_wa.json",
+    "url": "https://api.census.gov/data/2015/acs/acs5?get=NAME%2CB19013_001E%2CB17001_001E%2CB17001_002E&for=tract%3A%2A&in=state%3A53+county%3A%2A",
+    "timestamp_utc": "2026-11-17T07:45:24.108098+00:00",
+    "download_date_pacific": "2026-11-16",
+    "status": "failed",
+    "error": "Census returned non-JSON (Missing Key). Set CENSUS_API_KEY locally; do not commit it."
+  },
+  {
+    "file": "nri_wa.json",
+    "url": "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0/query?where=STATEFIPS+%3D+%2753%27&outFields=%2A&returnGeometry=false&orderByFields=TRACTFIPS&resultRecordCount=2000&f=json",
+    "timestamp_utc": "2026-11-17T08:12:38.756944+00:00",
+    "download_date_pacific": "2026-11-17",
+    "status": "ok",
+    "bytes": 21819524,
+    "sha256": "a9bb05d84f6e8c4004e8d505a29e265f311b21a420bcb53f17bd56097032a0ea"
+  },
+  {
+    "file": "nri_wa.csv",
+    "url": "derived from data/raw/nri_wa.json (official FEMA query above)",
+    "timestamp_utc": "2026-11-17T08:12:41.939493+00:00",
+    "download_date_pacific": "2026-11-17",
+    "status": "ok",
+    "bytes": 10592654,
+    "sha256": "ef21154596378686b3a9a863fc623089b447302aa23fb3ced3c0d0e9d602a091"
+  },
+  {
+    "file": "tract_relationship_national.txt",
+    "url": "https://www2.census.gov/geo/docs/maps-data/data/rel2020/tract/tab20_tract20_tract10_natl.txt",
+    "timestamp_utc": "2026-11-17T08:15:18.192600+00:00",
+    "download_date_pacific": "2026-11-17",
+    "status": "ok",
+    "bytes": 18686287,
+    "sha256": "3c2ea8e13bf359349cc6ee042980e539d0a8032328ce8c5ae10679b9000e3d17"
+  }
+]
