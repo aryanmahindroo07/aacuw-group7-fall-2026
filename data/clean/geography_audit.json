@@ -1,0 +1,14 @@
+{
+  "national_relationship_rows": 126450,
+  "wa_2020_relationship_rows": 3078,
+  "census_2010_tracts": 1458,
+  "census_2020_tracts": 1784,
+  "usaleep_rows": 1370,
+  "usaleep_missing_estimates": 0,
+  "missing_usaleep_records": 88,
+  "one_to_one_pairs": 392,
+  "excluded_by_geography": 1066,
+  "one_to_one_with_life_expectancy": 373,
+  "usaleep_match_rate_2010": 0.9396433470507545,
+  "one_to_one_rate_2010": 0.26886145404663925
+}

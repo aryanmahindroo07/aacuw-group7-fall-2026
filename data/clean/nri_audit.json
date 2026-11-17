@@ -1,0 +1,17 @@
+{
+  "nri_rows": 1772,
+  "census_2020_tracts": 1784,
+  "census_2020_tracts_missing_nri": 12,
+  "nri_match_rate_2020": 0.9932735426008968,
+  "one_to_one_nri_matches": 385,
+  "one_to_one_with_life_and_nri": 373,
+  "null_counts": {
+    "DRGT_RISKS": 0,
+    "WFIR_RISKS": 0,
+    "HWAV_RISKS": 0,
+    "CFLD_RISKS": 431,
+    "IFLD_RISKS": 0,
+    "RISK_SCORE": 0,
+    "EAL_VALT": 0
+  }
+}
