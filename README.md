@@ -1,6 +1,6 @@
 ## Title and question
 
-# Climate hazard risk and life expectancy in Washington
+**Climate hazard risk and life expectancy in Washington**
 
 Does climate-related hazard risk still predict life expectancy across Washington State census tracts after controlling for income?
 
@@ -33,7 +33,7 @@ python src/clean.py
 python notebooks/01_first_look.py
 ```
 
-The current session has **no Census API key**; the API returned “Missing Key.” Obtain one at https://api.census.gov/data/key_signup.html and set `CENSUS_API_KEY` locally (do not commit it). The downloader logs failures and continues independent downloads, then exits nonzero if any required source failed. Existing validated, checksum-matching downloads are reused; `--refresh` redownloads them. `--only usaleep relationship nri` downloads independent sources without ACS. `python src/clean.py --audit-only` runs geography/life-expectancy checks without ACS.
+The current session has **no Census API key**; the API returned “Missing Key.” Obtain one at https://api.census.gov/data/key_signup.html and set `CENSUS_API_KEY` locally (do not commit it). The downloader logs failures and continues independent downloads, then exits nonzero if any required source failed. Existing validated, checksum-matching downloads are reused; `--refresh` redownloads them. `--only usaleep relationship nri` downloads independent sources without ACS. `python src/clean.py --audit-only` runs geography/life-expectancy and available NRI checks without ACS. Small JSON audit summaries are committed; detailed tract audit CSVs stay local.
 
 Cleaning creates `data/clean/project.duckdb` with `tract_analysis` plus audit tables, `tract_analysis.csv`, and `project.sqlite` with a `tract_analysis` table and GEOID primary key. It refuses to build these analysis exports if any required source is missing or invalid. SQLPad needs a server-side SQLite connection with access to the exported file (a local file is not automatically uploaded to hosted SQLPad).
 
@@ -45,7 +45,7 @@ ORDER BY life_expectancy;
 
 ## Findings
 
-Verified inputs: **1,370 USALEEP rows**, **1,471 Census 2010 tracts**, **1,784 Census 2020 tracts**. Only **392 reciprocal 1:1 pairs** survive the strict geography rule; 1,079 2010 tracts are excluded before other missing-data checks. USALEEP has no blank life expectancy among its published WA rows, but 101 Census tracts are absent from that file.
+Verified inputs: **1,370 USALEEP rows**, **1,458 Census 2010 tracts**, **1,784 Census 2020 tracts**. Only **392 reciprocal 1:1 pairs** survive the strict geography rule; 1,066 2010 tracts are excluded before other missing-data checks. USALEEP has no blank life expectancy among its published WA rows, but 88 Census tracts are absent from that file. Of the 392 pairs, 19 lack life expectancy, leaving **373 with life expectancy and a FEMA match before ACS checks**. FEMA contains **1,772 WA tracts** (99.3% of the 2020 universe); 385 of the 392 strict pairs match FEMA (98.2%).
 
 **Answer and correlations: pending ACS key and a successful complete run.** No numbers are estimated or fabricated. The analysis script will save a scatter by income quartile, income boxplot, correlation table with pair counts, and descriptive income-adjusted results. TODO: review generated results and choose 2–3 presentation charts.
 
