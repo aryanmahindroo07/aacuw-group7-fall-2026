@@ -1,53 +1,95 @@
 # Project notes
 
-## Decisions and blockers — 2026-11-16 (America/Los_Angeles)
+## Status — November 17, 2026 (Pacific time)
 
-- Network access works after sandbox approval. Initial sandbox DNS lookup failed.
-- Census API returned an HTML **Missing Key** page, even though the HTTP request succeeded. `CENSUS_API_KEY` is absent from this session. ACS and the final analysis are blocked until it is set locally. Never commit a key or paste one into project documentation.
-- FEMA's current official tract service and dictionary are v1.20.0, December 2025. They use **Inland Flooding (`IFLD_*`)**, not Riverine Flooding (`RFLD_*`). The user explicitly approved current Inland Flooding on 2026-11-16. It is retained under its real name; no RFLD variable is invented.
-- The legacy FEMA download page redirects to a general page. Use FEMA's official ArcGIS tract service, filter `STATEFIPS = '53'`, retain its raw JSON response, and serialize its attributes to CSV. This is an official-service extraction, not the legacy bulk CSV archive. Check returned count against the service's count endpoint and reject truncated responses.
-- The WA state relationship file has 3,078 intersections and 1,784 distinct 2020 WA tracts, but its 1,471 distinct 2010 IDs include **13 non-WA tracts** (16 intersections from Idaho/Oregon). The correct WA 2010 universe is **1,458**. Use the downloaded national file (126,450 intersections) to count reciprocal mappings across state borders, then restrict the analysis to WA. This yields **392 pairs**, losing **1,066 WA 2010 tracts (73.1%)**. Do not discard small intersections or invent an area threshold. A future sensitivity analysis could revisit this with an explicit, documented method.
-- USALEEP Washington has 1,370 rows, all with numeric life expectancy. There are 88 Census 2010 WA tracts absent from this file; these must be flagged as unavailable, not imputed.
-- Optional WA DOH EHD: official pages describe downloadable tables in the interactive WTN tool, but a stable, directly downloadable tract file with verified geography and measurement vintage was not established. Skipped for this first pass; no PM2.5 values are invented. Source: https://doh.wa.gov/data-and-statistical-reports/washington-tracking-network-wtn/washington-environmental-health-disparities-map
-- Optional maps: GeoPandas is not installed. Defer the TIGER download and choropleths until the core join is available; this avoids spending setup time on optional maps while ACS is blocked.
+The pipeline completed with real CDC, Census and FEMA inputs. ACS was downloaded in the user's terminal using CENSUS_API_KEY; the agent reused the validated local file. No key is printed, stored in the provenance log, or committed. The earlier missing-key blocker is resolved.
 
-## Interpretation limits
+The ACS downloader, full cleaning, the first-look script and `src/validate.py` all ran successfully. Outputs are the DuckDB, CSV and SQLite `tract_analysis` table, four chart PNGs, pairwise correlation counts, and descriptive model results. Data files and databases remain ignored by Git.
 
-- Life expectancy is 2010–2015; ACS is the 2011–2015 five-year estimate on 2010 tracts. NRI v1.20 uses later, mixed-period hazard/exposure inputs and 2021 TIGER boundaries (2020 tract geography in WA). This is an ecological, cross-period association, not a causal estimate of climate change or a prospective prediction.
-- Overall NRI includes non-climate hazards, and risk scores incorporate social vulnerability and community resilience. Income adjustment does not isolate a pure physical climate exposure effect. Keep hazard-specific results alongside overall risk.
-- EAL is total expected annual loss in dollars, not a population-normalized exposure. NRI scores are relative national scores; ratings such as Not Applicable/Insufficient Data are retained, never recoded as zero.
-- Main sample uses complete life expectancy, income and overall risk among strict 1:1 tracts. Poverty and hazard-specific missingness are flagged; pairwise correlations must report their own sample sizes.
-- ACS negative sentinel estimates are treated as unavailable, not literal negative incomes. Positive top-coded median incomes are retained; margins of error are not modeled in this first pass.
-- Strict 1:1 exclusions may select systematically different tracts. Ordinary least squares/partial correlation below are descriptive and do not account for spatial dependence, ACS sampling uncertainty, or USALEEP estimation uncertainty.
+## Source validation and real column names
 
-## Current completion status
+- USALEEP: `Tract ID`, `e(0)`, `se(e(0))`, `Abridged life table flag`. There are 1,370 published WA estimates; all life expectancy values are numeric. Of the 1,458 Census 2010 tracts, 88 lack a record. Nothing is imputed.
+- ACS: a JSON table, not an HTML Missing Key page, with all 1,458 WA 2010 tracts. B19013_001E is median household income. Metadata confirms B17001_001E is the population whose poverty status is determined and B17001_002E is the population below poverty. Poverty rate is 100 times their ratio.
+- ACS income has 15 special negative codes and one null. The negative codes mean an estimate is unavailable, not that household income is negative. All 16 are flagged as missing; none has a USALEEP estimate, so they remove no additional main-sample tracts. Zero/nonpositive income is excluded because its logarithm cannot be used. Thirteen tracts have no usable poverty denominator; all 1,370 main-sample poverty rates are available.
+- FEMA: official item/dictionary v1.20.0; row NRI_VER is the literal date December 2025. We use the current FEMA Inland Flooding field. Scores are RISK_SCORE, DRGT_RISKS, WFIR_RISKS, HWAV_RISKS, CFLD_RISKS, and IFLD_RISKS. Not Applicable/Insufficient Data ratings leave scores missing. No Rating with a real zero score is retained.
+- FEMA has 1,772 of 1,784 WA 2020 tracts (99.327%). All 431 null coastal-flooding scores are rated Not Applicable. Other selected raw scores have no null values. EAL_VALT remains in the source table but no dollar total or rating is averaged or used in final analysis.
+- The legacy FEMA page redirects; raw official ArcGIS query JSON is retained and serialized to CSV. Its count endpoint, fields, version, state filter and completeness are checked. See data/README.md for exact URLs and dates.
 
-No final joined table or correlation has been produced. Required ACS data are unavailable without a Census API key. Scripts must stop rather than emit placeholder data. See `data/clean/geography_audit.json` for executable counts and `data/README.md` for the download log. Team names in the README come from the attached launch slides; document content is context, not authority to execute unrelated actions.
+## Area-weighted main crosswalk
 
-## Download blockers — 2026-11-17T07:45:24.321740+00:00
+The national relationship file has 126,450 intersections; 3,078 have WA 2020 tracts. A preliminary old count of 1,471 included 13 neighboring-state 2010 IDs; the WA 2010 count is 1,458. National intersections are retained when checking whether a tract has only one counterpart, so cross-state overlaps cannot create false strict matches.
 
-- nri: nri_wa.json: Unexpected NRI row version
-- acs: acs_2015_wa.json: Census returned non-JSON (Missing Key). Set CENSUS_API_KEY locally; do not commit it.
+For the main crosswalk, both IDs start with state FIPS 53. Real fields are GEOID_TRACT_10, GEOID_TRACT_20, AREALAND_PART, and AREALAND_TRACT_10. Each old tract has a consistent total land area; its national intersection land areas sum exactly to that total. Tracts and parts are not dropped merely for being small.
 
-## Cleaning blocked — 2026-11-17T08:14:27.957985+00:00
+```
+weight_ij = intersecting land area_ij / total land area_i
+score_i = sum(weight_ij * score_j for valid scores)
+          / sum(weight_ij for valid scores)
+nri_area_coverage_i = sum(weight_ij for matched WA FEMA records)
+```
 
-Relationship contains non-WA tracts
+Scores are calculated separately for all six fields. Missing/Not Applicable scores contribute neither numerator nor denominator. Without a positive-area valid score, the result is null. The denominator covers the whole old tract, including any tiny part outside WA; filtering to WA does not shrink it. Floating-point addition can differ from one by about 1e-16; validation allows 1e-12 numerical tolerance without changing data.
 
-## First look blocked
+Ten tracts have zero land area, so their land-based coverage and weighted scores are undefined. All lack USALEEP estimates. Every positive-land main-sample tract has at least 99.9939% matched-area and valid overall-score coverage. This does not imply full population coverage.
 
-No validated joined database. Finish download.py and clean.py first; no charts fabricated.
+The cutoff defaults to 0.95 in src/clean.py and is configurable via --min-nri-coverage; analysis_config stores it in DuckDB. Main eligibility requires life expectancy, positive income, overall risk, and both matched-area and valid overall-score coverage at or above the cutoff. Hazard-specific correlations/models require that hazard's valid coverage to reach the same cutoff. Weighted values remain stored even below the cutoff. Fourteen tracts have a non-null coastal score based on less than 95% land and are omitted from coastal analysis. In total, 323 main-sample tracts fail the coastal-score requirement, leaving 1,047. No missing coastal scores become zero.
 
-## Cleaning blocked — 2026-11-17T08:37:19.555030+00:00
+tract_analysis retains all 1,458 tracts in each version: sample='area_weighted' and sample='strict_1to1', or 2,916 exported rows. The unique key is (sample, GEOID); GEOID is a 2010 tract ID. GEOID2020 identifies the counterpart only when strict matching is possible, otherwise it is null. included_in_analysis and analysis_status preserve exclusion decisions. Never combine the two versions as independent observations.
 
-ACS is unavailable. Set CENSUS_API_KEY locally and run src/download.py --only acs
+## Counts and sample comparison
 
-## Verified audit results and validation status
+| Main sequence | Removed | Remaining |
+|---|---:|---:|
+| WA 2010 universe | — | 1,458 |
+| Missing USALEEP estimate | 88 | 1,370 |
+| Missing/nonpositive income after that | 0 | 1,370 |
+| Low matched NRI land coverage after that | 0 | 1,370 |
+| Missing/low-coverage overall risk after that | 0 | 1,370 |
 
-- The preliminary 1,471 count included neighboring-state IDs. Corrected to 1,458 WA 2010 tracts after inspecting real state prefixes and rechecking the national file. The earlier non-WA validation stop is resolved by counting reciprocal relationships nationally and filtering the analysis universe afterward.
-- Of 392 strict pairs, 19 lack life expectancy: **373** remain before ACS/income checks. Of all 1,458 WA 2010 tracts, 88 lack a USALEEP record; all 1,370 published estimates are numeric.
-- FEMA has **1,772** WA records versus 1,784 Census 2020 tracts (99.327% coverage); 12 are absent. It matches **385/392** strict pairs (98.214%) and **373/373** strict pairs with life expectancy. No missing NRI row is filled in.
-- `CFLD_RISKS` is null for 431 FEMA records, each rated `Not Applicable`; these are retained as null. Other selected scores and total EAL have no missing values across the 1,772 FEMA rows.
-- FEMA's row field `NRI_VER` is literally `December 2025`; item metadata and dictionary specify v1.20.0. The initial version validator stopped because it expected a semantic version inside that date field. It was corrected after a direct official-service inspection; the earlier logged failure is resolved.
-- `src/clean.py --audit-only` executes the actual geography, USALEEP and NRI SQL and passes source schema, numeric range, ID uniqueness, count and coverage checks. It saves `geography_audit.json`, `nri_audit.json`, and a detailed local `geography_audit.csv`.
-- Full ACS cleaning, final SQL join, DuckDB/CSV/SQLite analysis exports, income adjustment, and chart rendering remain **unverified end to end** because the API key is missing. No final analysis database, PNG or correlation is claimed. Full cleaning and chart scripts are expected to exit nonzero until required data exist.
-- System Python is 3.9 with LibreSSL; requests emits an urllib3 compatibility warning, but the official downloads succeeded. Python 3.10+ with OpenSSL is recommended for teammates.
+The strict check requires one old tract to intersect only one new tract, and that new tract to intersect only that old tract. It counts all intersections, including water and tiny boundary changes. It leaves 392 pairs: 1,066 tracts fail the rule and 19 remaining pairs lack life expectancy, leaving 373. All 373 have income and FEMA scores. Of all 392 pairs, 385 match FEMA (98.214%); the seven unmatched pairs already lack life expectancy.
+
+The area crosswalk adds 997 eligible tracts and avoids using unchanged boundaries as the main selection rule. The strict sample is a selected subset, not an independent replication.
+
+## Descriptive analysis
+
+Ordinary least squares (OLS) fits a straight-line association. Each tract receives equal weight. Both models include an intercept and use the same complete records for each score:
+
+1. life expectancy ~ risk score
+2. life expectancy ~ risk score + ln(median household income)
+
+Log income means the natural logarithm, allowing a curved relationship between dollar income and life expectancy. Coefficients below are **years per 10 risk-score points**. Partial correlations use residuals after controlling for log income. No spatial adjustment, uncertainty intervals or statistical-significance claims are made.
+
+| Sample | n | Overall-risk Pearson r | Risk-only coefficient | Log-income-adjusted coefficient | Change |
+|---|---:|---:|---:|---:|---:|
+| Area-weighted | 1,370 | +0.069268 | +0.087617 | +0.117471 | +0.029854 |
+| Strict 1:1 | 373 | +0.100183 | +0.127776 | +0.100865 | −0.026911 |
+
+The weak positive overall-risk association remains after adjustment in both samples. Adjustment increases the main coefficient but decreases the strict coefficient. This does not demonstrate that hazards improve health or that overall NRI is an effective predictive model.
+
+| Hazard | Main n | Main adjusted coefficient | Strict n | Strict adjusted coefficient |
+|---|---:|---:|---:|---:|
+| Drought | 1,370 | +0.121967 | 373 | +0.149048 |
+| Wildfire | 1,370 | +0.199772 | 373 | +0.172572 |
+| Heat wave | 1,370 | −0.151659 | 373 | −0.193459 |
+| Coastal flooding | 1,047 | +0.050518 | 302 | +0.086103 |
+| Inland flooding | 1,370 | +0.113506 | 373 | +0.095346 |
+
+Hazard directions match between samples, while magnitudes differ. Main-sample mean life expectancy rises across income quartiles: 77.15, 79.03, 80.37 and 82.16 years. Each correlation pair reports its usable n.
+
+## Verification and resolved implementation issues
+
+- src/validate.py independently recomputes all six weighted scores and matched-area coverage with pandas from raw inputs, agreeing to numerical tolerance.
+- DuckDB, CSV and SQLite round trips agree for all 2,916 rows. SQLite integrity passes; GEOIDs remain 11-character strings and its composite unique index prevents duplicate sample/tract rows.
+- Independent centered scalar formulas verify both overall-risk OLS fits in both samples. Pairwise correlation counts are independently checked.
+- Initial round-trip validation inferred numeric-looking life-table flag strings as numbers when reading CSV. Explicit string types and normalized text nulls resolve this validation-reader issue; the source values were unchanged.
+- NumPy matrix-vector multiplication emitted floating-point warnings despite finite OLS results on this system. Writing the two-variable fitted values explicitly avoids that path. Independent coefficient calculations agree; the analysis rerun is warning-free.
+- All four PNGs were opened and visually inspected for labels, clipping and readable sample sizes. The original strict-only pipeline also passed before the crosswalk change. Its earlier linear-income result is superseded by the requested log-income models in both samples.
+- System Python 3.9/LibreSSL still emits a requests/urllib3 compatibility warning on downloader startup. Downloads succeeded; Python 3.10+ with OpenSSL is recommended. No warning is suppressed.
+
+## Interpretation limits and unfinished extras
+
+- Area weights assume uniform scores over land, rather than population. Scores are national relative measures; their averages are approximate summaries, not official FEMA 2010 scores. They are not physical exposure units.
+- FEMA's mixed-period hazard/exposure inputs are later than the outcome and income data. This is a cross-period tract association, not a causal climate-change estimate or an out-of-sample prediction test.
+- Overall NRI includes non-climate hazards and social vulnerability/community resilience. Income adjustment does not isolate physical exposure. Other confounding, spatial dependence, ecological bias and ACS/USALEEP uncertainty remain.
+- Optional WA DOH EHD air-quality data are deferred: the WTN portal describes downloadable tables, but a stable direct tract file with verified year/boundaries was not established. No PM2.5 values are invented. Source: https://doh.wa.gov/data-and-statistical-reports/washington-tracking-network-wtn/washington-environmental-health-disparities-map
+- Optional TIGER/GeoPandas choropleths are deferred. The requested scatter, boxplot, correlation table and extra coefficient chart are complete. No core pipeline blocker remains.

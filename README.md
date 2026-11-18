@@ -6,61 +6,102 @@ Does climate-related hazard risk still predict life expectancy across Washington
 
 ## Team
 
-AACUW Group 7, Fall 2026. **Intermediate, Route B (visuals).**
-Launch slides list Anumita Basani, Aryan Mahindroo, Stephanie Balderas, Jiselle Vargas Salazar, and Dylan Huynh. TODO: confirm roster and task ownership.
+AACUW Group 7, Fall 2026 — **Intermediate, Route B (visuals)**.
+
+Launch slides list Anumita Basani, Aryan Mahindroo, Stephanie Balderas, Jiselle Vargas Salazar, and Dylan Huynh. TODO: confirm task ownership.
 
 ## Data
 
-- [CDC/NCHS USALEEP](https://www.cdc.gov/nchs/nvss/usaleep/usaleep.html): life expectancy at birth, 2010–2015; Washington, 2010 tracts.
-- [FEMA National Risk Index](https://www.arcgis.com/home/item.html?id=9da4eeb936544335a6db0cd7a8448a51): v1.20.0, December 2025; WA 2020 tract geography. Drought, wildfire, heat wave, coastal flooding, **inland flooding** (user-approved current replacement for the requested riverine flooding), overall risk and expected annual loss.
-- [ACS 2015 five-year API](https://api.census.gov/data/2015/acs/acs5.html): 2011–2015 median household income `B19013_001E`; poverty = `100 * B17001_002E / B17001_001E`.
-- [Census tract relationship files](https://www.census.gov/geographies/reference-files/time-series/geo/relationship-files.2020.html): reciprocal 1:1 mappings only, no interpolation.
-- Optional WA DOH EHD and maps deferred; details in [NOTES.md](NOTES.md).
+| Source | What we use | Geography and period |
+|---|---|---|
+| [CDC/NCHS USALEEP](https://www.cdc.gov/nchs/nvss/usaleep/usaleep.html) | Life expectancy at birth and estimate flags; 1,370 WA records | 2010 tracts, 2010–2015 |
+| [Census ACS five-year API](https://api.census.gov/data/2015/acs/acs5.html) | Median household income `B19013_001E`; poverty = `100 × B17001_002E / B17001_001E`; 1,458 records | 2010 tracts, 2011–2015 |
+| [FEMA National Risk Index](https://www.arcgis.com/home/item.html?id=9da4eeb936544335a6db0cd7a8448a51) | Overall, drought, wildfire, heat wave, coastal flooding and inland flooding scores; 1,772 records | WA 2020 tract geography; December 2025, v1.20.0 |
+| [Census tract relationships](https://www.census.gov/geographies/reference-files/time-series/geo/relationship-files.2020.html) | Land intersections between 2010 and 2020 tracts | 1,458 WA 2010 tracts; 1,784 WA 2020 tracts |
 
-Downloads began **2026-11-16 Pacific time**. Exact URLs, UTC timestamps, sizes and SHA-256 checksums are in [data/README.md](data/README.md) and `data/download_log.json`. Raw data and generated databases are ignored by Git.
+We use the current FEMA Inland Flooding field (`IFLD_*`). We download FEMA's official service response and save its attributes as CSV. Expected annual loss is a dollar total and is **excluded from the crosswalk and main analysis**. Optional WA DOH air-quality data and maps remain future work.
+
+To transfer a 2020 score onto a 2010 tract, each overlapping 2020 tract gets a weight of `AREALAND_PART / AREALAND_TRACT_10`. We average only valid scores, redistributing the weights over the valid parts. Missing or “Not Applicable” scores never become zero. `nri_area_coverage` records the fraction of the whole 2010 tract's land matched to WA FEMA records; each score also has its own valid-area coverage column. Zero-land tracts have undefined land coverage.
+
+Downloads: November 16–17, 2026, Pacific time; ACS completed November 17. Exact URLs, UTC times, sizes and checksums: [data/README.md](data/README.md) and `data/download_log.json`. Raw files stay local.
 
 ## How to run
 
-Python 3.9+ (3.10+ recommended). Run from the repo root:
+Python 3.10+ recommended (this run used 3.9). From the repo root:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-# Set CENSUS_API_KEY in your local environment before downloading ACS.
+# For a fresh ACS download, set CENSUS_API_KEY in your terminal environment.
 python src/download.py
 python src/clean.py
 python notebooks/01_first_look.py
+python src/validate.py
 ```
 
-The current session has **no Census API key**; the API returned “Missing Key.” Obtain one at https://api.census.gov/data/key_signup.html and set `CENSUS_API_KEY` locally (do not commit it). The downloader logs failures and continues independent downloads, then exits nonzero if any required source failed. Existing validated, checksum-matching downloads are reused; `--refresh` redownloads them. `--only usaleep relationship nri` downloads independent sources without ACS. `python src/clean.py --audit-only` runs geography/life-expectancy and available NRI checks without ACS. Small JSON audit summaries are committed; detailed tract audit CSVs stay local.
+The ACS download is complete. Validated files are reused without needing a key again. For fresh downloads, get a key from [Census](https://api.census.gov/data/key_signup.html); keep it in your environment and never commit it. `--refresh` redownloads inputs; `--only acs` downloads only ACS. `python src/clean.py --audit-only` checks available geography and FEMA inputs.
 
-Cleaning creates `data/clean/project.duckdb` with `tract_analysis` plus audit tables, `tract_analysis.csv`, and `project.sqlite` with a `tract_analysis` table and GEOID primary key. It refuses to build these analysis exports if any required source is missing or invalid. SQLPad needs a server-side SQLite connection with access to the exported file (a local file is not automatically uploaded to hosted SQLPad).
+The default analysis requires life expectancy, positive household income, overall risk, and at least **95%** matched land and valid overall-score coverage. Change the cutoff with `python src/clean.py --min-nri-coverage 0.99`, then rerun the chart and validation scripts. Hazard correlations and models also require the same fraction of valid land for that particular hazard. This matters especially for coastal flooding.
+
+Cleaning creates `data/clean/project.duckdb`, `tract_analysis.csv`, and `project.sqlite`. The final `tract_analysis` table retains **all 1,458 tracts twice**, once as `sample = 'area_weighted'` and once as `sample = 'strict_1to1'`: **2,916 rows**, keyed by `(sample, GEOID)`. The strict version requires each old tract to overlap only one new tract and that new tract to overlap only that old tract. `included_in_analysis` and `analysis_status` show which rows qualify. `GEOID` is always the 2010 tract ID; `GEOID2020` is populated only where a unique strict match exists.
+
+**Always select one sample and its eligible rows**, so a tract is not counted twice. This query works in DuckDB and SQLite:
 
 ```sql
-SELECT GEOID, life_expectancy, median_household_income, overall_risk_score
+SELECT GEOID, life_expectancy, median_household_income,
+       overall_risk_score, nri_area_coverage
 FROM tract_analysis
+WHERE sample = 'area_weighted' AND included_in_analysis = 1
 ORDER BY life_expectancy;
 ```
 
+To use SQLPad, configure its SQLite connection to a server-accessible copy of `data/clean/project.sqlite`. A local file is not automatically uploaded to a hosted SQLPad instance.
+
 ## Findings
 
-Verified inputs: **1,370 USALEEP rows**, **1,458 Census 2010 tracts**, **1,784 Census 2020 tracts**. Only **392 reciprocal 1:1 pairs** survive the strict geography rule; 1,066 2010 tracts are excluded before other missing-data checks. USALEEP has no blank life expectancy among its published WA rows, but 88 Census tracts are absent from that file. Of the 392 pairs, 19 lack life expectancy, leaving **373 with life expectancy and a FEMA match before ACS checks**. FEMA contains **1,772 WA tracts** (99.3% of the 2020 universe); 385 of the 392 strict pairs match FEMA (98.2%).
+The end-to-end run and independent validation passed. The main sample grows from **373 strict tracts to 1,370 area-weighted tracts**.
 
-**Answer and correlations: pending ACS key and a successful complete run.** No numbers are estimated or fabricated. The analysis script will save a scatter by income quartile, income boxplot, correlation table with pair counts, and descriptive income-adjusted results. TODO: review generated results and choose 2–3 presentation charts.
+| Main sample step | Removed at this step | Remaining |
+|---|---:|---:|
+| All WA 2010 tracts | — | 1,458 |
+| Missing USALEEP life expectancy | 88 | 1,370 |
+| Missing/nonpositive ACS income | 0 additional | 1,370 |
+| Less than 95% matched NRI land coverage | 0 additional | 1,370 |
+| Missing/low-coverage overall score | 0 additional | 1,370 |
+
+**Overall NRI risk has a weak positive association with life expectancy that remains after log-income adjustment.** It does not show the expected negative overall-risk pattern in this descriptive analysis.
+
+| Sample | n | Pearson correlation | Risk-only OLS | OLS with log(income) |
+|---|---:|---:|---:|---:|
+| Area-weighted main | 1,370 | +0.069 | +0.0876 years | +0.1175 years |
+| Strict 1:1 check | 373 | +0.100 | +0.1278 years | +0.1009 years |
+
+OLS coefficients are **years per 10 overall risk-score points**. Models are `life expectancy ~ risk` and `life expectancy ~ risk + ln(median household income)`, each with an intercept and equal weight per tract. Land weighting is used only to transfer scores between boundaries. The positive direction holds on the strict sample, but the direction of the change after income adjustment differs. These are point estimates, not significance or causal claims.
+
+Hazards differ: heat-wave risk has a negative income-adjusted coefficient (**−0.152 years per 10 points**, n=1,370), while wildfire has a positive one (**+0.200**, n=1,370). Coastal flooding uses only **1,047** main-sample tracts with at least 95% valid coastal-score coverage. The [correlation table](charts/correlation_table.png) reports each pair's sample size; [model results](charts/income_adjusted_associations.csv) contain all six scores and both samples.
+
+![Life expectancy and area-weighted overall risk, colored by income quartile](charts/life_expectancy_vs_risk.png)
+
+![Life expectancy by income quartile](charts/life_expectancy_by_income.png)
+
+![Overall-risk coefficients before and after log-income adjustment](charts/risk_coefficients.png)
 
 ## Repo map
 
-- `src/download.py`: validated official downloads and provenance log.
-- `src/clean.py`: pandas input/schema checks, DuckDB SQL execution, audits and exports.
-- `sql/`: normalization, strict tract mapping, joins and descriptive queries.
-- `notebooks/01_first_look.py`: runnable first-look script (notebook alternative).
-- `data/raw/`: local original downloads; `data/clean/`: local outputs and audit reports.
-- `charts/`: PNG figures and small result tables after a complete run.
-- `NOTES.md`: blockers, assumptions and limitations; `TODO.md`: teammate starter work.
+- `src/download.py`: official downloads, response validation and key-free provenance logging.
+- `src/clean.py`: input validation, SQL execution, coverage threshold and three exports.
+- `src/validate.py`: independent pandas crosswalk, export round trips, pair counts and OLS checks using real inputs.
+- `sql/`: geography, ACS and FEMA normalization, area crosswalk, joined samples, example queries.
+- `notebooks/01_first_look.py`: runnable notebook alternative; charts, correlations and descriptive OLS.
+- `data/raw/`: ignored source files; `data/clean/`: ignored tract exports plus committed small audit summaries.
+- `charts/`: four PNGs, pairwise correlation/count CSVs, income summaries and both-sample model results.
+- `NOTES.md`: method, detailed checks and limitations; `TODO.md`: teammate starter tasks.
 
 ## Limits and next steps
 
-The strict mapping loses most 2010 tracts; report selection bias. NRI is later than the health/income data, includes non-climate hazards, and embeds vulnerability/resilience. These are tract-level associations, not evidence that climate change caused a lifespan difference. See [NOTES.md](NOTES.md) for all caveats.
+Area averaging assumes a 2020 tract score applies uniformly over its land. People and hazards are not distributed uniformly, and NRI scores are national relative scores; averaging them creates an approximate tract measure, not an official FEMA 2010 score. Coverage measures matched land, not matched population. The 95% cutoff is a documented analysis choice.
 
-Next: supply a Census API key, run and review the full pipeline, inspect join losses/missingness, evaluate income-adjusted hazard associations, and add linked maps if time permits. Midpoint: November 18; final talk: December 2, 2026 (launch slides).
+NRI's later, mixed-period inputs do not align with 2010–2015 life expectancy. Overall risk includes non-climate hazards and already incorporates social vulnerability/resilience. The models omit spatial dependence, other confounders, ACS/USALEEP uncertainty, and out-of-sample prediction checks. They cannot establish climate-change causation or individual health effects. Strict matching also selects stable-boundary tracts; it is a sensitivity check rather than the main sample.
+
+Next: review captions and hazard-specific findings, consider population-weighted or physical-exposure alternatives, add linked maps and a verified DOH dataset if feasible, and prepare the 5–7 minute talk. Midpoint: November 18; final talk: December 2, 2026.

@@ -1,19 +1,18 @@
 # Small tasks for team commits
 
-Four starter workstreams; confirm owners together (the slides list five members). Each person should run the pipeline and commit their own documentation or chart improvement.
+The data pipeline, ACS download, area crosswalk, exports and first charts are complete. Four starter workstreams remain; confirm owners together (the slides list five members). Each teammate should commit their own review, caption or improvement.
 
-1. **USALEEP owner — TODO name:** read CDC's record layout; document life table flags and standard errors; explain the missing-tract audit in 3 sentences. Commit: `docs: explain USALEEP coverage and estimate flags`.
-2. **FEMA owner — TODO name:** read the saved dictionary and metadata; document each selected hazard, the inland/riverine change, and why overall risk is not climate-only. Review the risk scatter labels. Commit: `docs: describe NRI hazard scores and limitations`.
-3. **ACS owner — TODO name:** get a local Census API key, run the downloader, verify B17001 numerator/denominator labels, document sentinel values and income top-coding, review the income boxplot. Commit: `docs: verify ACS income and poverty definitions`.
-4. **SQL and visuals owner — TODO name:** run the SQL join and inspect `tract_audit.csv`; summarize exclusions, review the pairwise correlation counts, and add a chart caption. Commit: `docs: explain tract join losses and first findings`.
+1. **USALEEP owner — TODO name:** read CDC's record layout, explain estimate flags/standard errors, and caption the 88 tracts with no published estimate. Commit: `docs: explain USALEEP coverage and estimate flags`.
+2. **FEMA owner — TODO name:** review the dictionary, explain why overall risk is not climate-only, and compare heat-wave and wildfire results. We use the current FEMA Inland Flooding field. Commit: `docs: explain hazard-specific findings`.
+3. **ACS owner — TODO name:** review poverty numerator/denominator labels, explain special negative missing-data codes and income top-coding, and caption the income boxplot. The API download is complete; obtaining a key is not an open task. Commit: `docs: explain ACS measures and income chart`.
+4. **SQL and visuals owner — TODO name:** query one sample at a time, explain land weights and the 95% cutoff, and compare the 1,370 main tracts with the 373 strict tracts. Review correlation pair counts. Commit: `docs: explain crosswalk and sample sensitivity`.
 
-Aryan can coordinate the pipeline and help whichever workstream has two people. Do not share API keys in commits. Run `git status` before committing; generated raw data/databases stay local.
+Aryan can coordinate and help the workstream with two people. Run `python src/validate.py` after changing calculations. Do not share keys or commit raw data/databases.
 
-## Follow-up work
+## Next improvements
 
-- Supply `CENSUS_API_KEY` locally and finish the end-to-end run. Do not claim a correlation until real complete inputs exist.
-- Review unadjusted versus income-adjusted results, plus hazard-specific results; choose 2–3 visuals.
-- If feasible, install GeoPandas and fetch appropriate Census TIGER boundaries for side-by-side maps; show excluded tracts distinctly.
-- Find a stable WA DOH tract download and confirm measurement year/geography before adding PM2.5.
-- Discuss sensitivity to the strict reciprocal mapping (no undocumented overlap threshold).
-- Prepare a 5–7 minute talk with limitations and each teammate's contribution.
+- Select 2–3 presentation visuals and review captions together. Explain the weak positive overall-risk association without implying that hazards improve health.
+- Consider sensitivity to coverage cutoffs, population weighting, physical hazard measures and spatial dependence.
+- Add linked maps with appropriate Census boundaries if feasible; show missing life-expectancy tracts separately.
+- Find a stable WA DOH download and confirm measurement year and boundaries before adding PM2.5.
+- Prepare a 5–7 minute talk and list each teammate's contribution. Midpoint: November 18; final talk: December 2, 2026.
