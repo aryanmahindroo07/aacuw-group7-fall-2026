@@ -1,0 +1,31 @@
+{
+  "n": 1370,
+  "first_correlation": 0.06926775408398833,
+  "first_correlation_pair_n": 1370,
+  "min_nri_coverage": 0.95,
+  "overall_risk_ols": [
+    {
+      "sample": "area_weighted",
+      "risk": "overall_risk_score",
+      "n": 1370,
+      "status": "descriptive only",
+      "pearson_r": 0.06926775408399488,
+      "partial_r_controlling_log_income": 0.11517893938307898,
+      "years_per_10_risk_points_unadjusted": 0.08761740257841977,
+      "years_per_10_risk_points_log_income_adjusted": 0.11747134361545149,
+      "coefficient_change": 0.02985394103703172
+    },
+    {
+      "sample": "strict_1to1",
+      "risk": "overall_risk_score",
+      "n": 373,
+      "status": "descriptive only",
+      "pearson_r": 0.10018298468155389,
+      "partial_r_controlling_log_income": 0.10654985176302618,
+      "years_per_10_risk_points_unadjusted": 0.12777627293877367,
+      "years_per_10_risk_points_log_income_adjusted": 0.10086535556832736,
+      "coefficient_change": -0.026910917370446305
+    }
+  ],
+  "caveat": "Descriptive cross-period tract associations; natural log income control; no spatial/causal inference."
+}

@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "crosswalk": "independent pandas from raw inputs",
+  "export_rows": 2916,
+  "unique_2010_tracts": 1458,
+  "checks": [
+    "six weighted scores and matched-area coverage",
+    "strict scores equal original FEMA scores",
+    "CSV and SQLite round trips",
+    "SQLite integrity",
+    "both overall-risk OLS fits in both samples",
+    "correlation pair counts"
+  ]
+}
