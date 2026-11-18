@@ -17,7 +17,8 @@ Official source URLs and download attempts below. UTC timestamps are exact; proj
 | nri_wa.json | https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0/query?where=STATEFIPS+%3D+%2753%27&outFields=%2A&returnGeometry=false&orderByFields=TRACTFIPS&resultRecordCount=2000&f=json | 2026-11-17T08:12:38.756944+00:00 | 2026-11-17 | ok |
 | nri_wa.csv | derived from data/raw/nri_wa.json (official FEMA query above) | 2026-11-17T08:12:41.939493+00:00 | 2026-11-17 | ok |
 | tract_relationship_national.txt | https://www2.census.gov/geo/docs/maps-data/data/rel2020/tract/tab20_tract20_tract10_natl.txt | 2026-11-17T08:15:18.192600+00:00 | 2026-11-17 | ok |
+| acs_2015_wa.json | https://api.census.gov/data/2015/acs/acs5?get=NAME%2CB19013_001E%2CB17001_001E%2CB17001_002E&for=tract%3A%2A&in=state%3A53+county%3A%2A | 2026-11-18T01:48:30.450489+00:00 | 2026-11-17 | ok |
 
-NRI CSV is serialized from FEMA's official JSON attributes (all columns), filtered to WA. Raw service responses and metadata are retained. Version 1.20.0 uses Inland Flooding (IFLD), approved by the user.
+NRI CSV is serialized from FEMA's official JSON attributes (all columns), filtered to WA. Raw service responses and metadata are retained. We use the current FEMA Inland Flooding field (IFLD), version 1.20.0.
 
 Optional EHD and TIGER maps are deferred; see `../NOTES.md`.

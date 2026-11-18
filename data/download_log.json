@@ -113,5 +113,14 @@
     "status": "ok",
     "bytes": 18686287,
     "sha256": "3c2ea8e13bf359349cc6ee042980e539d0a8032328ce8c5ae10679b9000e3d17"
+  },
+  {
+    "file": "acs_2015_wa.json",
+    "url": "https://api.census.gov/data/2015/acs/acs5?get=NAME%2CB19013_001E%2CB17001_001E%2CB17001_002E&for=tract%3A%2A&in=state%3A53+county%3A%2A",
+    "timestamp_utc": "2026-11-18T01:48:30.450489+00:00",
+    "download_date_pacific": "2026-11-17",
+    "status": "ok",
+    "bytes": 133974,
+    "sha256": "4873dcbdf34bf7b24e5db941c0a8a7dd9d354b55ae5496ddbec5d6983c247349"
   }
 ]

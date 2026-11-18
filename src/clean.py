@@ -57,7 +57,7 @@ def geography(con):
     u = read_csv('usaleep_wa.csv')
     r = read_csv('tract_relationship_national.txt', '|')
     require(u, ['Tract ID', 'e(0)', 'se(e(0))', 'Abridged life table flag'], 'USALEEP')
-    require(r, ['GEOID_TRACT_10', 'GEOID_TRACT_20', 'AREALAND_PART', 'AREAWATER_PART'], 'Relationship')
+    require(r, ['GEOID_TRACT_10', 'GEOID_TRACT_20', 'AREALAND_TRACT_10', 'AREALAND_PART', 'AREAWATER_PART'], 'Relationship')
     u['Tract ID'] = check_ids(u['Tract ID'], 11, 'USALEEP', unique=True)
     for col in ['GEOID_TRACT_10', 'GEOID_TRACT_20']:
         r[col] = check_ids(r[col], 11, 'Relationship')
@@ -69,7 +69,18 @@ def geography(con):
     life = pd.to_numeric(u['e(0)'])
     if ((life.dropna() <= 0) | (life.dropna() > 120)).any():
         raise ValueError('Unexpected life expectancy range')
-    check_numeric(r, ['AREALAND_PART', 'AREAWATER_PART'], 'Relationship')
+    check_numeric(r, ['AREALAND_TRACT_10', 'AREALAND_PART', 'AREAWATER_PART'], 'Relationship')
+    # Verify the denominator and complete partitions nationally, before WA filtering.
+    land = r[['GEOID_TRACT_10', 'AREALAND_TRACT_10', 'AREALAND_PART']].copy()
+    for col in ['AREALAND_TRACT_10', 'AREALAND_PART']:
+        land[col] = pd.to_numeric(land[col])
+        if land[col].isna().any() or (land[col] < 0).any():
+            raise ValueError('Missing or negative relationship land area')
+    if land.groupby('GEOID_TRACT_10').AREALAND_TRACT_10.nunique().max() != 1:
+        raise ValueError('Inconsistent 2010 tract land-area denominator')
+    totals = land.groupby('GEOID_TRACT_10').agg(total=('AREALAND_TRACT_10', 'first'), parts=('AREALAND_PART', 'sum'))
+    if (totals.total - totals.parts).abs().max() != 0:
+        raise ValueError('Relationship land intersections do not sum to full tract areas')
     con.register('usaleep_input', u)
     con.register('relationship_input', r)
     sql(con, '01_geography.sql')
@@ -81,7 +92,7 @@ def geography(con):
                   usaleep_missing_estimates=int(life.isna().sum()),
                   missing_usaleep_records=int(audit.missing_usaleep_record.sum()),
                   one_to_one_pairs=int(audit.is_one_to_one.sum()),
-                  excluded_by_geography=int((~audit.is_one_to_one).sum()),
+                  excluded_by_strict_mapping=int((~audit.is_one_to_one).sum()),
                   one_to_one_with_life_expectancy=int((audit.is_one_to_one & ~audit.missing_life_expectancy).sum()))
     # Wide sanity bounds detect wrong state/geography without pretending approximations are exact.
     if not 1400 <= counts['census_2010_tracts'] <= 1550 or not 1700 <= counts['census_2020_tracts'] <= 1850:
@@ -121,7 +132,8 @@ def full_sources(con):
     con.register('acs_input', a)
     sql(con, '02_acs.sql')
     nri_rows = nri_source(con)
-    sql(con, '03_join.sql')
+    sql(con, '03_crosswalk.sql')
+    sql(con, '04_join.sql')
     old = set(con.table('geography_audit').df().GEOID)
     if not set(a.state + a.county + a.tract).issubset(old) or len(a) != len(old):
         raise ValueError('ACS coverage differs from full WA 2010 universe; inspect before joining')
@@ -176,10 +188,15 @@ def nri_source(con):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--audit-only', action='store_true')
+    parser.add_argument('--min-nri-coverage', type=float, default=0.95,
+                        help='Required fraction of 2010 land covered by NRI (default: 0.95)')
     args = parser.parse_args()
+    if not 0 <= args.min_nri_coverage <= 1:
+        parser.error('--min-nri-coverage must be between 0 and 1')
     CLEAN.mkdir(parents=True, exist_ok=True)
     # Work in memory: failure cannot leave a half-built final database.
     con = duckdb.connect()
+    con.execute('CREATE TABLE analysis_config AS SELECT ?::DOUBLE AS min_nri_coverage', [args.min_nri_coverage])
     try:
         counts = geography(con)
         if args.audit_only:
@@ -187,18 +204,31 @@ def main():
                 nri_source(con)
             return
         counts['acs_rows'], counts['nri_rows'] = full_sources(con)
-        frame = con.execute('SELECT * FROM tract_analysis ORDER BY GEOID').df()
-        if frame.empty or frame.GEOID.duplicated().any():
-            raise ValueError('Final sample is empty or contains duplicate GEOIDs')
-        audit = con.execute('SELECT * FROM tract_audit ORDER BY GEOID').df()
-        exclusions = dict(con.execute('SELECT analysis_status, tracts FROM exclusion_counts').fetchall())
-        counts.update(final_rows=len(frame), exclusions=exclusions,
+        frame = con.execute('SELECT * FROM tract_analysis ORDER BY sample, GEOID').df()
+        if frame.empty or frame.duplicated(['sample', 'GEOID']).any():
+            raise ValueError('Final table is empty or contains duplicate (sample, GEOID) pairs')
+        if frame.groupby('sample').size().to_dict() != {'area_weighted': 1458, 'strict_1to1': 1458}:
+            raise ValueError('Final table did not retain every WA 2010 tract in both versions')
+        audit = frame[frame['sample'].eq('area_weighted')]
+        if audit.nri_area_coverage.dropna().lt(0).any() or audit.nri_area_coverage.dropna().gt(1 + 1e-12).any():
+            raise ValueError('Area coverage outside 0–1')
+        exclusions = con.execute('SELECT * FROM exclusion_counts ORDER BY sample, analysis_status').df().to_dict('records')
+        selected = frame[frame.included_in_analysis]
+        if selected.empty:
+            raise ValueError('No tracts pass the analysis filter')
+        counts.update(export_rows=len(frame), min_nri_coverage=args.min_nri_coverage,
+                      included_by_sample=selected.groupby('sample').size().to_dict(), exclusions=exclusions,
                       acs_join_matches=int((~audit.missing_acs_record).sum()),
-                      nri_matches_on_one_to_one=int((audit.is_one_to_one & ~audit.missing_nri_record).sum()),
                       missingness_flags={c: int(audit[c].sum()) for c in audit if c.startswith('missing_')})
         counts['acs_match_rate_2010'] = counts['acs_join_matches'] / counts['census_2010_tracts']
-        counts['nri_match_rate_one_to_one'] = counts['nri_matches_on_one_to_one'] / counts['one_to_one_pairs']
+        counts['main_sequential_counts'] = dict(
+            all_2010_tracts=len(audit),
+            with_life_expectancy=int((~audit.missing_life_expectancy).sum()),
+            also_with_income=int((~audit.missing_life_expectancy & ~audit.missing_income).sum()),
+            also_with_nri_coverage=int((~audit.missing_life_expectancy & ~audit.missing_income & audit.nri_area_coverage.ge(args.min_nri_coverage)).sum()),
+            included=int(audit.included_in_analysis.sum()))
         tables = ['tract_relationship', 'tract_mapping', 'life_expectancy', 'geography_audit', 'acs', 'nri',
+                  'crosswalk_parts', 'nri_weighted', 'nri_strict', 'analysis_config',
                   'tract_audit', 'tract_analysis', 'exclusion_counts']
         # Stage database files, then replace prior successful exports.
         db_temp = CLEAN / 'project.duckdb.part'
@@ -211,7 +241,9 @@ def main():
         sqlite_temp = CLEAN / 'project.sqlite.part'
         with sqlite3.connect(sqlite_temp) as db:
             frame.to_sql('tract_analysis', db, if_exists='replace', index=False,
-                         dtype={'GEOID': 'TEXT PRIMARY KEY', 'GEOID2020': 'TEXT'})
+                         dtype={'GEOID': 'TEXT', 'GEOID2020': 'TEXT'})
+            db.execute('DROP INDEX IF EXISTS tract_analysis_key')
+            db.execute('CREATE UNIQUE INDEX tract_analysis_key ON tract_analysis(sample, GEOID)')
             assert db.execute('SELECT COUNT(*) FROM tract_analysis').fetchone()[0] == len(frame)
         db_temp.replace(CLEAN / 'project.duckdb')
         sqlite_temp.replace(CLEAN / 'project.sqlite')

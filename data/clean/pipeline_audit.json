@@ -1,0 +1,65 @@
+{
+  "national_relationship_rows": 126450,
+  "wa_2020_relationship_rows": 3078,
+  "census_2010_tracts": 1458,
+  "census_2020_tracts": 1784,
+  "usaleep_rows": 1370,
+  "usaleep_missing_estimates": 0,
+  "missing_usaleep_records": 88,
+  "one_to_one_pairs": 392,
+  "excluded_by_strict_mapping": 1066,
+  "one_to_one_with_life_expectancy": 373,
+  "usaleep_match_rate_2010": 0.9396433470507545,
+  "one_to_one_rate_2010": 0.26886145404663925,
+  "acs_rows": 1458,
+  "nri_rows": 1772,
+  "export_rows": 2916,
+  "min_nri_coverage": 0.95,
+  "included_by_sample": {
+    "area_weighted": 1370,
+    "strict_1to1": 373
+  },
+  "exclusions": [
+    {
+      "sample": "area_weighted",
+      "analysis_status": "included",
+      "tracts": 1370
+    },
+    {
+      "sample": "area_weighted",
+      "analysis_status": "missing_life_expectancy",
+      "tracts": 88
+    },
+    {
+      "sample": "strict_1to1",
+      "analysis_status": "included",
+      "tracts": 373
+    },
+    {
+      "sample": "strict_1to1",
+      "analysis_status": "missing_life_expectancy",
+      "tracts": 19
+    },
+    {
+      "sample": "strict_1to1",
+      "analysis_status": "not_one_to_one",
+      "tracts": 1066
+    }
+  ],
+  "acs_join_matches": 1458,
+  "missingness_flags": {
+    "missing_usaleep_record": 88,
+    "missing_life_expectancy": 88,
+    "missing_acs_record": 0,
+    "missing_income": 16,
+    "missing_poverty": 13
+  },
+  "acs_match_rate_2010": 1.0,
+  "main_sequential_counts": {
+    "all_2010_tracts": 1458,
+    "with_life_expectancy": 1370,
+    "also_with_income": 1370,
+    "also_with_nri_coverage": 1370,
+    "included": 1370
+  }
+}

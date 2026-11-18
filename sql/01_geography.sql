@@ -3,6 +3,7 @@ CREATE OR REPLACE TABLE tract_relationship AS
 SELECT DISTINCT lpad(GEOID_TRACT_10, 11, '0') AS GEOID,
        lpad(GEOID_TRACT_20, 11, '0') AS GEOID2020,
        CAST(AREALAND_PART AS DOUBLE) AS land_overlap_m2,
+       CAST(AREALAND_TRACT_10 AS DOUBLE) AS land_area_2010_m2,
        CAST(AREAWATER_PART AS DOUBLE) AS water_overlap_m2
 FROM relationship_input;
 

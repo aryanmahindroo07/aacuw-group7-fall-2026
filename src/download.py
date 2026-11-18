@@ -54,7 +54,7 @@ class Downloader:
                          f"{row['download_date_pacific']} | {row['status']} |")
         lines += ["", "NRI CSV is serialized from FEMA's official JSON attributes (all columns), "
                   "filtered to WA. Raw service responses and metadata are retained. "
-                  "Version 1.20.0 uses Inland Flooding (IFLD), approved by the user.", "",
+                  "We use the current FEMA Inland Flooding field (IFLD), version 1.20.0.", "",
                   "Optional EHD and TIGER maps are deferred; see `../NOTES.md`."]
         (ROOT / "data/README.md").write_text("\n".join(lines) + "\n")
 
