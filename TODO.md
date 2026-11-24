@@ -3,7 +3,7 @@
 The data pipeline, ACS download, area crosswalk, exports and first charts are complete. Four starter workstreams remain; confirm owners together (the slides list five members). Each teammate should commit their own review, caption or improvement.
 
 1. **USALEEP owner — Dylan Huynh:** read CDC's record layout, explain estimate flags/standard errors, and caption the 88 tracts with no published estimate. Commit: `docs: explain USALEEP coverage and estimate flags`.
-2. **FEMA owner — TODO name:** review the dictionary, explain why overall risk is not climate-only, and compare heat-wave and wildfire results. We use the current FEMA Inland Flooding field. Commit: `docs: explain hazard-specific findings`.
+2. **FEMA owner — Dylan Huynh:** review the dictionary, explain why overall risk is not climate-only, and compare heat-wave and wildfire results. We use the current FEMA Inland Flooding field. Commit: `docs: explain hazard-specific findings`.
 3. **ACS owner — TODO name:** review poverty numerator/denominator labels, explain special negative missing-data codes and income top-coding, and caption the income boxplot. The API download is complete; obtaining a key is not an open task. Commit: `docs: explain ACS measures and income chart`.
 4. **SQL and visuals owner — TODO name:** query one sample at a time, explain land weights and the 95% cutoff, and compare the 1,370 main tracts with the 373 strict tracts. Review correlation pair counts. Commit: `docs: explain crosswalk and sample sensitivity`.
 
